@@ -11,8 +11,9 @@ int main(int argc, char const *argv[])
 	char *output_file = (char *)argv[2];
 	char *quantum = (char *)argv[3];
 
-	printf("Nombre archivo de salida: %s\n", output_file);
-	printf("Quantum: %s\n", quantum);
+	// printf("Nombre archivo de salida: %s\n", output_file);
+	// printf("Quantum: %s\n", quantum);
+
 
 
 	InputFile *input_file = read_file(file_name);

@@ -8,63 +8,61 @@
 #include <sys/time.h>
 
 // Function to create a new queue
-Queue* create_queue(int quantum) {
+Queue* create_queue(const char* name, int quantum, int capacity) {
     Queue* q = (Queue*)malloc(sizeof(Queue));
-    q->front = NULL;
-    q->rear = NULL;
+    if (!q) return NULL;
+
+    strcpy(q->name, name);
     q->quantum = quantum;
+    q->capacity = capacity;
+    q->size = 0;
+    q->processes = (Process**)malloc(capacity * sizeof(Process*));
+
+    if (!q->processes) {
+        free(q);
+        return NULL;
+    }
+
     return q;
 }
 
-// Function to check if the queue is empty
+// Verificar si la cola está vacía
 int is_empty(Queue* q) {
-    return q->front == NULL;
+    return q->size == 0;
 }
 
-// Function to add a process to the queue
+// Encolar un proceso
 void enqueue(Queue* q, Process* p) {
-    Node* new_node = (Node*)malloc(sizeof(Node));
-    new_node->process = p;
-    new_node->next = NULL;
-    if (is_empty(q)) {
-        q->front = new_node;
-        q->rear = new_node;
+    if (q->size < q->capacity) {
+        q->processes[q->size] = p;
+        q->size++;
     } else {
-        q->rear->next = new_node;
-        q->rear = new_node;
+        printf("La cola está llena, no se puede agregar más procesos\n");
     }
 }
 
-// Function to remove a process from the queue
+// Desencolar un proceso
 Process* dequeue(Queue* q) {
     if (is_empty(q)) {
+        printf("La cola está vacía\n");
         return NULL;
     }
-    Node* temp = q->front;
-    Process* p = temp->process;
-    q->front = q->front->next;
-    if (q->front == NULL) {
-        q->rear = NULL;
+
+    Process* p = q->processes[0];
+
+    // Mover todos los procesos hacia adelante
+    for (int i = 1; i < q->size; i++) {
+        q->processes[i - 1] = q->processes[i];
     }
-    free(temp);
+    q->size--;
+
     return p;
 }
 
-// Function to print the queue
+// Imprimir el contenido de la cola
 void print_queue(Queue* q) {
-    Node* current = q->front;
-    while (current != NULL) {
-        print_process(current->process);
-        current = current->next;
+    printf("Cola %s (Quantum: %d) - Procesos:\n", q->name, q->quantum);
+    for (int i = 0; i < q->size; i++) {
+        printf("Proceso %s (PID: %d)\n", q->processes[i]->name, q->processes[i]->pid);
     }
-}
-
-// Function to calculate quantum
-int calculate_quantum(int q, char* queue_type) {
-    if (queue_type == "High") {
-        return 2 * q;
-    } else if (queue_type == "Low") {
-        return q;
-    }
-    return -1; // Error en caso de tipo de cola inválido
 }
