@@ -12,7 +12,7 @@ typedef struct {
 } Queue;
 
 
-Queue* create_queue(const char* name, int quantum, int capacitym);
+Queue* create_queue(char* name, char* quantum, int capacity);
 
 int is_empty(Queue* q);
 

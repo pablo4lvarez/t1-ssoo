@@ -8,12 +8,23 @@
 #include <sys/time.h>
 
 // Function to create a new queue
-Queue* create_queue(const char* name, int quantum, int capacity) {
+Queue* create_queue(char* name, char* quantum, int capacity) {
     Queue* q = (Queue*)malloc(sizeof(Queue));
     if (!q) return NULL;
 
     strcpy(q->name, name);
-    q->quantum = quantum;
+    int int_quantum = atoi(quantum);
+
+    if (strcmp(name, "High") == 0) {
+        q->quantum = 2 * int_quantum;
+    } else if (strcmp(name, "Low") == 0) {
+        q->quantum = int_quantum;
+    } else {
+        printf("Tipo de cola no válido. Usando el valor por defecto.\n");
+        q->quantum = int_quantum;      // Valor por defecto en caso de un tipo inválido
+    }
+
+    // Inicializar los demás campos
     q->capacity = capacity;
     q->size = 0;
     q->processes = (Process**)malloc(capacity * sizeof(Process*));
@@ -34,6 +45,7 @@ int is_empty(Queue* q) {
 // Encolar un proceso
 void enqueue(Queue* q, Process* p) {
     if (q->size < q->capacity) {
+        p->t_lcpu = q->quantum;
         q->processes[q->size] = p;
         q->size++;
     } else {

@@ -23,6 +23,6 @@ typedef struct {
 
 } Process;
 
-Process* create_process(int pid, char* name, int t_cpu_burst, int n_burst, int t_io, int t_deadline, int quantum);
+Process* create_process(char* name, int pid, int t_start, int t_cpu_burst, int n_burst, int t_io, int t_deadline);
 
 void print_process(Process* p);
