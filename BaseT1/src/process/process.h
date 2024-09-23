@@ -26,3 +26,10 @@ typedef struct {
 Process* create_process(char* name, int pid, int t_start, int t_cpu_burst, int n_burst, int t_io, int t_deadline);
 
 void print_process(Process* p);
+
+
+
+
+
+
+void write_csv(Process* processes, int len, char* file_name);

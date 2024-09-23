@@ -46,3 +46,21 @@ void print_process(Process* p) {
   printf("Turnaround Time: %d\n", p->turnaround_time);
   printf("Sum of Deadlines: %d\n", p->sum_deadline);
 }
+
+
+
+// Function to write a csv file with the results
+void write_csv(Process* processes, int len, char* file_name) {
+  FILE* file = fopen(file_name, "w");
+  if (!file) {
+    printf("Error opening the file\n");
+    return;
+  }
+
+  for (int i = 0; i < len; ++i) {
+    int response = processes[i].t_finish - processes[i].t_start;
+    fprintf(file, "%s,%d,%d,%d,%d,%d,%d\n", processes[i].name, processes[i].pid, processes[i].n_interrupts, processes[i].turnaround_time, response, processes[i].waiting_time, processes[i].sum_deadline);
+  }
+
+  fclose(file);
+}
