@@ -8,7 +8,7 @@
 #include <sys/time.h>
 
 // Function to create a new process
-Process* create_process(int pid, char* name, int t_cpu_burst, int n_burst, int t_io, int t_deadline) {
+Process* create_process(int pid, char* name, int t_cpu_burst, int n_burst, int t_io, int t_deadline, int quantum) {
   Process* p = (Process*) malloc(sizeof(Process));
   p->pid = pid;
   p->name = name;
@@ -17,6 +17,15 @@ Process* create_process(int pid, char* name, int t_cpu_burst, int n_burst, int t
   p->n_burst = n_burst;
   p->t_io = t_io;
   p->t_deadline = t_deadline;
+
+  p->t_lcpu = quantum;
+  p->t_start = 0;
+  p->t_finish = 0;
+  p->n_interrupts = 0;
+  p->waiting_time = 0;
+  p->turnaround_time = 0;
+  p->sum_deadline = 0;
+
   return p;
 }
 
@@ -29,4 +38,12 @@ void print_process(Process* p) {
   printf("Number of Bursts: %d\n", p->n_burst);
   printf("I/O Time: %d\n", p->t_io);
   printf("Deadline: %d\n", p->t_deadline);
+  printf('The other attributes are: \n');
+  printf("Start Time: %d\n", p->t_start);
+  printf("Finish Time: %d\n", p->t_finish);
+  printf("Number of Interrupts: %d\n", p->n_interrupts);
+  printf("Time left in CPU: %d\n", p->t_lcpu);
+  printf("Waiting Time: %d\n", p->waiting_time);
+  printf("Turnaround Time: %d\n", p->turnaround_time);
+  printf("Sum of Deadlines: %d\n", p->sum_deadline);
 }
