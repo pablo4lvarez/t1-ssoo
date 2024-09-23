@@ -23,7 +23,10 @@ int main(int argc, char const *argv[])
 	Queue *low_priority_queue = create_queue("Low", quantum, input_file->len);
 
 	// Arreglo para guardar los procesos
-	Process *processes[input_file->len];
+	// Process *processes[input_file->len];
+
+	Process* processes;
+	processes = calloc(input_file->len, sizeof(Process));
 
 	printf("Procesos:\n");
 	for (int i = 0; i < input_file->len; ++i)
@@ -34,7 +37,7 @@ int main(int argc, char const *argv[])
 		}
 		printf("\n");
 		Process *p = create_process(input_file->lines[i][0], atoi(input_file->lines[i][1]), atoi(input_file->lines[i][2]), atoi(input_file->lines[i][3]), atoi(input_file->lines[i][4]), atoi(input_file->lines[i][5]), atoi(input_file->lines[i][6]));
-		processes[i] = p;
+		processes[i] = *p;
 	}
 
 	// Iteramos sobre los ticks de ejecución del programa
@@ -47,7 +50,7 @@ int main(int argc, char const *argv[])
 		all_finished = true;
 		for (int i = 0; i < input_file->len; ++i)
 		{
-			if (processes[i]->t_finish == 0)
+			if (processes[i].t_finish == 0)
 			{
 				all_finished = false;
 				break;
@@ -58,13 +61,13 @@ int main(int argc, char const *argv[])
 		for (int i = 0; i < input_file->len; ++i)
 		{
 			// Verificamos si el proceso ha terminado
-			if (processes[i]->t_finish == 0) // no ha terminado
+			if (processes[i].t_finish == 0) // no ha terminado
 			{
 				// Verificamos si el proceso ha llegado al tick de inicio
-				if (processes[i]->t_start == tick)
+				if (processes[i].t_start == tick)
 				{
 					// Agregamos el proceso a la cola high
-					enqueue(high_priority_queue, processes[i]);
+					enqueue(high_priority_queue, &processes[i]);
 					print_queue(high_priority_queue);
 				}
 			}
