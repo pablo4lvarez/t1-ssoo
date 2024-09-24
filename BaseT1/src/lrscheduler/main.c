@@ -73,6 +73,8 @@ int main(int argc, char const *argv[])
 			}
 		}
 
+
+
 		// Incrementamos el tick
 		tick++;
 
