@@ -17,11 +17,10 @@ typedef struct {
   int t_finish; // tick en el que se termina
   int n_interrupts;
   int t_lcpu; // Tiempo en CPU, parte desde el quantum y se decrementa
-  int waiting_time = 0; // Suma de todo los intervalos de tiempo en los que el proceso estuvo en estado WAITING o READY
+  int waiting_time; // Suma de todo los intervalos de tiempo en los que el proceso estuvo en estado WAITING o READY
   int current_state_time; // Tiempo en el que el proceso lleva en el estado actual
   int turnaround_time; // t finish - t start
   int sum_deadline;
-
   int priority;
 
 } Process;

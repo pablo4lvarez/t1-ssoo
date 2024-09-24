@@ -130,7 +130,8 @@ void print_queue(Queue* q) {
 }
 
 // Iterar sobre ambas colas
-void iterate_queues(Queue* q1, Queue* q2) {
+// q1 es la cola de alta prioridad y q2 la de baja prioridad
+void iterate_queues(Queue* q1, Queue* q2, int tick) {
     for (int i = 0; i < q1->size; i++) {
         if (q1->processes[i]->state == "WAITING") {
             q1->processes[i]->waiting_time += 1;
@@ -139,25 +140,50 @@ void iterate_queues(Queue* q1, Queue* q2) {
                 q1->processes[i]->state = "READY";
                 q1->processes[i]->current_state_time = 0;
             }
-        } else if {
-            q1->processes[i]->state == "READY";
+        } else if (q1->processes[i]->state == "READY") {
             q1->processes[i]->waiting_time += 1;
-        } else if (q1->processes[i]->state == "RUNNING"){
+        } else if (q1->processes[i]->state == "RUNNING") {
             q1->processes[i]->t_lcpu -= 1;
             q1->processes[i]->current_state_time += 1;
-            if (q1->processes[i]->t_lcpu == 0) {
-                q1->processes[i]->n_burst -= 1;
-                q1->processes[i]->n_interrupts += 1;
+            // primero checkeamos si completó el burst o no
+            if (q1->processes[i]->t_cpu_burst == q1->processes[i]->current_state_time) {
+                // completó el burst
+                q1->processes[i]->n_burst -= 1; // decrementamos el número de bursts que le quedan
+                
+                // ver si el proceso termino o no
                 if (q1->processes[i]->n_burst == 0) {
+                    // terminó
                     q1->processes[i]->state = "FINISHED";
-                    q1->processes[i]->t_finish = 1;
+                    q1->processes[i]->t_finish = tick; // NECESITAMOS EL TICK EN EL QUE TERMINA
+                    // Sacarlo de la cola
+                    dequeue_process(q1, q1->processes[i]);
                 } else {
+                    // no terminó. Cedió el CPU, por ende el proceso se queda en la misma cola en estado WAITING
                     q1->processes[i]->state = "WAITING";
+                    q1->processes[i]->current_state_time = 0;
+                }
+            } else {
+                // no completó el burst
+
+                // ver si se le acabó el quantum
+                if (q1->processes[i]->t_lcpu == 0) {
+                    // se le acabó el quantum. Hay que moverlo a la cola de baja prioridad
+                    q1->processes[i]->state = "READY";
+                    q1->processes[i]->current_state_time = 0;
+                    move_process(q1, q2, q1->processes[i]);
+                } else {
+                    // no se le acabó el quantum. El proceso sigue corriendo.
+                    q1->processes[i]->state = "RUNNING";
                 }
             }
         }
     }
+
     for (int i = 0; i < q2->size; i++) {
-        q2->processes[i]->t_lcpu -= 1;
+        // revisar si es posible mover algún proceso de la cola de baja prioridad a la de alta prioridad
+        if (2 * q2->processes[i]->t_deadline < tick - q2->processes[i]->t_lcpu) {
+            // mover proceso
+            move_process(q2, q1, q2->processes[i]);
+        }
     }
 }
