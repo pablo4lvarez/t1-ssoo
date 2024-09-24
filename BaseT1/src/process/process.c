@@ -25,6 +25,8 @@ Process* create_process(char* name, int pid, int t_start, int t_cpu_burst, int n
   p->waiting_time = 0;
   p->turnaround_time = 0;
   p->sum_deadline = 0;
+  p->priority = -999999999;
+  p->current_state_time = 0;
 
   return p;
 }

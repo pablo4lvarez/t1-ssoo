@@ -20,4 +20,8 @@ void enqueue(Queue* q, Process* p);
 
 Process* dequeue(Queue* q);
 
+void sort_queue(Queue* q);
+
+void set_priotity(int tick, Queue* q);
+
 void print_queue(Queue* q);
