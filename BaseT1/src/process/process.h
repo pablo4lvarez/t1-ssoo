@@ -22,6 +22,7 @@ typedef struct {
   int turnaround_time; // t finish - t start
   int sum_deadline;
   int priority;
+  int first_execution_time;
 
 } Process;
 

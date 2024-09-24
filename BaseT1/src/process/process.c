@@ -27,6 +27,7 @@ Process* create_process(char* name, int pid, int t_start, int t_cpu_burst, int n
   p->sum_deadline = 0;
   p->priority = -999999999;
   p->current_state_time = 0;
+  p->first_execution_time = -1;
 
   return p;
 }
@@ -60,8 +61,10 @@ void write_csv(Process* processes, int len, char* file_name) {
   }
 
   for (int i = 0; i < len; ++i) {
-    int response = processes[i].t_finish - processes[i].t_start;
-    fprintf(file, "%s,%d,%d,%d,%d,%d,%d\n", processes[i].name, processes[i].pid, processes[i].n_interrupts, processes[i].turnaround_time, response, processes[i].waiting_time, processes[i].sum_deadline);
+    int response_time = processes[i].first_execution_time - processes[i].t_start; 
+
+    // name, pid, n_interrupts, turnaround_time, response_time, waiting_time, sum_deadline
+    fprintf(file, "%s,%d,%d,%d,%d,%d,%d\n", processes[i].name, processes[i].pid, processes[i].n_interrupts, processes[i].turnaround_time, response_time, processes[i].waiting_time, processes[i].sum_deadline);
   }
 
   fclose(file);

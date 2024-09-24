@@ -25,3 +25,5 @@ void sort_queue(Queue* q);
 void set_priotity(int tick, Queue* q);
 
 void print_queue(Queue* q);
+
+void iterate_queues(Queue* q1, Queue* q2, int tick);

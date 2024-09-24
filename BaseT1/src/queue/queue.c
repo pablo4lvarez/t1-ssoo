@@ -110,7 +110,7 @@ void set_priority(int tick, Queue* q) {
         if (q[i]->state == "READY") {
             q[i]->priority = tick - q[i]->t_lcpu - q[i]->t_deadline;
         } else {
-            q[i]->priority = -99999999999999999999;
+            q[i]->priority = -99999999;
         }
     }
 }
@@ -143,6 +143,16 @@ void iterate_queues(Queue* q1, Queue* q2, int tick) {
         } else if (q1->processes[i]->state == "READY") {
             q1->processes[i]->waiting_time += 1;
         } else if (q1->processes[i]->state == "RUNNING") {
+            // Cambiar el valor de su primera ejecución en caso de que sea asi
+            if (q1->processes[i]->first_execution_time == -1) {
+                q1->processes[i]->first_execution_time = tick;
+            }
+
+            // Ver si es que el proceso está pasado de su deadline
+            if (tick > q1->processes[i]->t_deadline) {
+                q1->processes[i]->sum_deadline += 1;
+            }
+
             q1->processes[i]->t_lcpu -= 1;
             q1->processes[i]->current_state_time += 1;
             // primero checkeamos si completó el burst o no
@@ -155,6 +165,8 @@ void iterate_queues(Queue* q1, Queue* q2, int tick) {
                     // terminó
                     q1->processes[i]->state = "FINISHED";
                     q1->processes[i]->t_finish = tick; // NECESITAMOS EL TICK EN EL QUE TERMINA
+                    // calcular turnaround time
+                    q1->processes[i]->turnaround_time = q1->processes[i]->t_finish - q1->processes[i]->t_start;
                     // Sacarlo de la cola
                     dequeue_process(q1, q1->processes[i]);
                 } else {
@@ -170,6 +182,7 @@ void iterate_queues(Queue* q1, Queue* q2, int tick) {
                     // se le acabó el quantum. Hay que moverlo a la cola de baja prioridad
                     q1->processes[i]->state = "READY";
                     q1->processes[i]->current_state_time = 0;
+                    q1->processes[i]->n_interrupts += 1; // incrementamos el número de interrupciones
                     move_process(q1, q2, q1->processes[i]);
                 } else {
                     // no se le acabó el quantum. El proceso sigue corriendo.
