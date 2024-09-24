@@ -79,6 +79,7 @@ int main(int argc, char const *argv[])
 		// Salimos del ciclo si ya pasaron 10 ticks, es solo para probar
 		if (tick == 10) {
 			print_queue(high_priority_queue);
+			// write_csv(processes, input_file->len, output_file);
 			break;
 		}
 	}
