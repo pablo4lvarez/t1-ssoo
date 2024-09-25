@@ -12,7 +12,7 @@ typedef struct {
 } Queue;
 
 
-Queue* create_queue(char* name, char* quantum, int capacity);
+Queue* create_queue(char* name, int quantum, int capacity);
 
 int is_empty(Queue* q);
 
@@ -22,7 +22,7 @@ Process* dequeue(Queue* q);
 
 void sort_queue(Queue* q);
 
-void set_priotity(int tick, Queue* q);
+void set_priority(int tick, Queue* q);
 
 void print_queue(Queue* q);
 
