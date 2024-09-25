@@ -8,12 +8,11 @@
 #include <sys/time.h>
 
 // Function to create a new queue
-Queue* create_queue(char* name, char* quantum, int capacity) {
-    Queue* q = (Queue*)malloc(sizeof(Queue));
+Queue* create_queue(char* name, int int_quantum, int capacity) {
+    Queue* q = (Queue*)calloc(1, sizeof(Queue));
     if (!q) return NULL;
 
     strcpy(q->name, name);
-    int int_quantum = atoi(quantum);
 
     if (strcmp(name, "High") == 0) {
         q->quantum = 2 * int_quantum;
@@ -89,16 +88,17 @@ void sort_queue(Queue* q) {
 // Determinar priorodad de un proceso
 void set_priority(int tick, Queue* q) {
     for (int i = 0; i < q->size - 1; i++) {
-        if (q[i]->state == "READY") {
-            q[i]->priority = tick - q[i]->t_lcpu - q[i]->t_deadline;
-        } else {
-            q[i]->priority = -99999999;
+        if (strcmp(q->processes[i]->state, "READY") == 0) {
+            q->processes[i]->priority = tick - q->processes[i]->t_lcpu - q->processes[i]->t_deadline;
+        } else if (strcmp(q->processes[i]->state, "RUNNING") == 0) {
+            q->processes[i]->priority = 999999999;
         }
     }
 }
 
 // mover un proceso de cola origen a cola destino
 void move_process(Queue* q1, Queue* q2, Process* p) {
+    p->t_lcpu = q2->quantum;
     enqueue(q2, p);
     dequeue_process(q1, p);
 }
@@ -114,26 +114,59 @@ void print_queue(Queue* q) {
 // Iterar sobre ambas colas
 // q1 es la cola de alta prioridad y q2 la de baja prioridad
 void iterate_queues(Queue* q1, Queue* q2, int tick) {
+    //imprimir el tick actual
+    printf("Tick: %d\n", tick);
+    if (q1->size == 0 && q2->size == 0) {
+        printf("No hay procesos en ninguna cola\n");
+        return;
+    }
+    //Si es que no hay ningun proceso RUNNING en q1, hacer que el primer proceso en READY pase a RUNNING
+    if (q1->size > 0) {
+        //iteramos sobre los procesos de la cola
+        for (int i = 0; i < q1->size; i++) {
+            if (strcmp(q1->processes[i]->state, "RUNNING") == 0) {
+                break;
+            }
+            if (strcmp(q1->processes[i]->state, "READY") == 0) {
+                q1->processes[i]->state = "RUNNING";
+                break;
+            }
+        }
+    } else if (q2->size > 0) {
+        //iteramos sobre los procesos de la cola
+        for (int i = 0; i < q2->size; i++) {
+            if (strcmp(q2->processes[i]->state, "RUNNING") == 0) {
+                break;
+            }
+            if (strcmp(q2->processes[i]->state, "READY") == 0) {
+                q2->processes[i]->state = "RUNNING";
+                break;
+            }
+        }
+    }
+
     for (int i = 0; i < q1->size; i++) {
-        if (q1->processes[i]->state == "WAITING") {
+        // imprimir el nombre del proceso con su estado
+        printf("Proceso %s %s\n", q1->processes[i]->name, q1->processes[i]->state);
+        if (strcmp(q1->processes[i]->state, "WAITING") == 0) {
             q1->processes[i]->waiting_time += 1;
             q1->processes[i]->current_state_time += 1;
             if (q1->processes[i]->current_state_time == q1->processes[i]->t_io) {
                 q1->processes[i]->state = "READY";
                 q1->processes[i]->current_state_time = 0;
             }
-        } else if (q1->processes[i]->state == "READY") {
+        } else if (strcmp(q1->processes[i]->state, "READY") == 0) {
             q1->processes[i]->waiting_time += 1;
-        } else if (q1->processes[i]->state == "RUNNING") {
+        } else if (strcmp(q1->processes[i]->state, "RUNNING") == 0) {
             // Cambiar el valor de su primera ejecución en caso de que sea asi
             if (q1->processes[i]->first_execution_time == -1) {
                 q1->processes[i]->first_execution_time = tick;
             }
 
             // Ver si es que el proceso está pasado de su deadline
-            if (tick > q1->processes[i]->t_deadline) {
-                q1->processes[i]->sum_deadline += 1;
-            }
+            // if (tick - q1->processes[i]->t_deadline - q1 -> processes[i] -> t_lcpu > 0) {
+            //     q1->processes[i]->sum_deadline += 1;
+            // }
 
             q1->processes[i]->t_lcpu -= 1;
             q1->processes[i]->current_state_time += 1;
@@ -141,20 +174,27 @@ void iterate_queues(Queue* q1, Queue* q2, int tick) {
             if (q1->processes[i]->t_cpu_burst == q1->processes[i]->current_state_time) {
                 // completó el burst
                 q1->processes[i]->n_burst -= 1; // decrementamos el número de bursts que le quedan
+                q1->processes[i]->current_state_time = 0;
                 
                 // ver si el proceso termino o no
                 if (q1->processes[i]->n_burst == 0) {
                     // terminó
                     q1->processes[i]->state = "FINISHED";
                     q1->processes[i]->t_finish = tick; // NECESITAMOS EL TICK EN EL QUE TERMINA
+                    q1->processes[i]->turnaround_time = q1->processes[i]->t_finish - q1->processes[i]->t_start;
                     // calcular turnaround time
                     q1->processes[i]->turnaround_time = q1->processes[i]->t_finish - q1->processes[i]->t_start;
                     // Sacarlo de la cola
                     dequeue_process(q1, q1->processes[i]);
+                } else if (q1->processes[i]->t_lcpu == 0) {
+                    // Terminó el quantum y el burst al mismo tiempo
+                    q1->processes[i]->state = "WAITING";
+                    q1->processes[i]->current_state_time = 0;
+                    q1->processes[i]->t_lcpu = q1->quantum;
+
                 } else {
                     // no terminó. Cedió el CPU, por ende el proceso se queda en la misma cola en estado WAITING
                     q1->processes[i]->state = "WAITING";
-                    q1->processes[i]->current_state_time = 0;
                 }
             } else {
                 // no completó el burst
@@ -171,36 +211,43 @@ void iterate_queues(Queue* q1, Queue* q2, int tick) {
                     q1->processes[i]->state = "RUNNING";
                 }
             }
+
+                        // Ver si es que el proceso está pasado de su deadline
+            if (tick - q1->processes[i]->t_deadline - q1 -> processes[i] -> t_lcpu > 0) {
+                q1->processes[i]->sum_deadline += 1;
+            }
         }
     }
 
     for (int i = 0; i < q2->size; i++) {
+        //imprimir el nombre de la cola
+        printf("Cola baja\n");
+        printf("Proceso %s %s\n", q1->processes[i]->name, q1->processes[i]->state);
         // revisar si es posible mover algún proceso de la cola de baja prioridad a la de alta prioridad
         if (2 * q2->processes[i]->t_deadline < tick - q2->processes[i]->t_lcpu) {
             // mover proceso
             move_process(q2, q1, q2->processes[i]);
         }
 
-        if (q2->processes[i]->state == "WAITING") {
+        if (strcmp(q2->processes[i]->state, "WAITING") == 0) {
             q2->processes[i]->waiting_time += 1;
             q2->processes[i]->current_state_time += 1;
             if (q2->processes[i]->current_state_time == q2->processes[i]->t_io) {
                 q2->processes[i]->state = "READY";
                 q2->processes[i]->current_state_time = 0;
             }
-        } else if (q2->processes[i]->state == "READY") {
+        } else if (strcmp(q2->processes[i]->state, "READY") == 0) {
             q2->processes[i]->waiting_time += 1;
-        } else if (q2->processes[i]->state == "RUNNING") {
+        } else if (strcmp(q2->processes[i]->state, "RUNNING") == 0) {
             // Cambiar el valor de su primera ejecución en caso de que sea asi
             if (q2->processes[i]->first_execution_time == -1) {
                 q2->processes[i]->first_execution_time = tick;
             }
 
             // Ver si es que el proceso está pasado de su deadline
-            if (tick > q2->processes[i]->t_deadline) {
+            if (tick - q2->processes[i]->t_deadline - q2 -> processes[i] -> t_lcpu > 0) {
                 q2->processes[i]->sum_deadline += 1;
             }
-
             q2->processes[i]->t_lcpu -= 1;
             q2->processes[i]->current_state_time += 1;
             // primero checkeamos si completó el burst o no
@@ -214,7 +261,7 @@ void iterate_queues(Queue* q1, Queue* q2, int tick) {
                     q2->processes[i]->state = "FINISHED";
                     q2->processes[i]->t_finish = tick; // NECESITAMOS EL TICK EN EL QUE TERMINA
                     // calcular turnaround time
-                    q2->processes[i]->turnaround_time = q2->processes[i]->t_finish - q2->processes[i]->t_start;
+                    q2->processes[i]->turnaround_time = q2->processes[i]->t_finish - q2->processes[i]->t_start + 1;
                     // Sacarlo de la cola
                     dequeue_process(q2, q2->processes[i]);
                 } else {
@@ -240,3 +287,4 @@ void iterate_queues(Queue* q1, Queue* q2, int tick) {
         }
     }
 }
+
