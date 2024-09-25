@@ -53,24 +53,6 @@ void enqueue(Queue* q, Process* p) {
     }
 }
 
-// Desencolar un proceso
-Process* dequeue(Queue* q) {
-    if (is_empty(q)) {
-        printf("La cola está vacía\n");
-        return NULL;
-    }
-
-    Process* p = q->processes[0];
-
-    // Mover todos los procesos hacia adelante
-    for (int i = 1; i < q->size; i++) {
-        q->processes[i - 1] = q->processes[i];
-    }
-    q->size--;
-
-    return p;
-}
-
 // Desencolar el porceso p de la cola q
 void dequeue_process(Queue* q, Process* p) {
     for (int i = 0; i < q->size; i++) {
@@ -197,6 +179,64 @@ void iterate_queues(Queue* q1, Queue* q2, int tick) {
         if (2 * q2->processes[i]->t_deadline < tick - q2->processes[i]->t_lcpu) {
             // mover proceso
             move_process(q2, q1, q2->processes[i]);
+        }
+
+        if (q2->processes[i]->state == "WAITING") {
+            q2->processes[i]->waiting_time += 1;
+            q2->processes[i]->current_state_time += 1;
+            if (q2->processes[i]->current_state_time == q2->processes[i]->t_io) {
+                q2->processes[i]->state = "READY";
+                q2->processes[i]->current_state_time = 0;
+            }
+        } else if (q2->processes[i]->state == "READY") {
+            q2->processes[i]->waiting_time += 1;
+        } else if (q2->processes[i]->state == "RUNNING") {
+            // Cambiar el valor de su primera ejecución en caso de que sea asi
+            if (q2->processes[i]->first_execution_time == -1) {
+                q2->processes[i]->first_execution_time = tick;
+            }
+
+            // Ver si es que el proceso está pasado de su deadline
+            if (tick > q2->processes[i]->t_deadline) {
+                q2->processes[i]->sum_deadline += 1;
+            }
+
+            q2->processes[i]->t_lcpu -= 1;
+            q2->processes[i]->current_state_time += 1;
+            // primero checkeamos si completó el burst o no
+            if (q2->processes[i]->t_cpu_burst == q2->processes[i]->current_state_time) {
+                // completó el burst
+                q2->processes[i]->n_burst -= 1; // decrementamos el número de bursts que le quedan
+                
+                // ver si el proceso termino o no
+                if (q2->processes[i]->n_burst == 0) {
+                    // terminó
+                    q2->processes[i]->state = "FINISHED";
+                    q2->processes[i]->t_finish = tick; // NECESITAMOS EL TICK EN EL QUE TERMINA
+                    // calcular turnaround time
+                    q2->processes[i]->turnaround_time = q2->processes[i]->t_finish - q2->processes[i]->t_start;
+                    // Sacarlo de la cola
+                    dequeue_process(q2, q2->processes[i]);
+                } else {
+                    // no terminó Cedió el CPU, por ende el proceso se queda en la misma cola en estado WAITING
+                    q2->processes[i]->state = "WAITING";
+                    q2->processes[i]->current_state_time = 0;
+                }
+            } else {
+                // no completó el burst
+
+                // ver si se le acabó el quantum
+                if (q2->processes[i]->t_lcpu == 0) {
+                    // se le acabó el quantum.
+                    q2->processes[i]->state = "READY";
+                    q2->processes[i]->current_state_time = 0;
+                    q2->processes[i]->n_interrupts += 1; // incrementamos el número de interrupciones
+                    q2->processes[i]->t_lcpu = q2->quantum; // reseteamos el quantum
+                } else {
+                    // no se le acabó el quantum. El proceso sigue corriendo.
+                    q2->processes[i]->state = "RUNNING";
+                }
+            }
         }
     }
 }
